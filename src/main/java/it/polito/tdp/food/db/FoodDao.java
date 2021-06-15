@@ -6,12 +6,49 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.food.model.Arco;
 import it.polito.tdp.food.model.Condiment;
 import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Portion;
 
 public class FoodDao {
+	
+	public void loadAllVertici(Map <Integer, Food> idMap,Integer porzioni){
+		String sql = "SELECT f.food_code, f.display_name "
+				+ "FROM food as f, portion as p "
+				+ "WHERE f.food_code=p.food_code "
+				+ "GROUP BY p.food_code, f.display_name "
+				+ "HAVING COUNT(p.portion_id)<=?" ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			st.setInt(1, porzioni);
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+				if(!idMap.containsKey(res.getInt("food_code"))) {
+					Food f= new Food(res.getInt("food_code"), res.getString("display_name"));
+					idMap.put(res.getInt("food_code"), f);
+					System.out.println(f);
+				}//if
+				
+			}//while
+			
+			conn.close();
+			return  ;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return  ;
+		}
+
+	}
+	
 	public List<Food> listAllFoods(){
 		String sql = "SELECT * FROM food" ;
 		try {
@@ -109,4 +146,41 @@ public class FoodDao {
 		}
 
 	}
+	
+	
+	public List<Arco> listArchi(Map <Integer, Food> idMap){ //idMAP
+		String sql = "SELECT f1.food_code as f1, f2.food_code as f2, COUNT(DISTINCT f1.condiment_code) as Ncomuni, AVG(c.condiment_calories) as peso "
+				+ "FROM food_condiment as f1, food_condiment as f2, condiment as c "
+				+ "WHERE f1.food_code>f2.food_code and f1.condiment_code=f2.condiment_code and c.condiment_code=f1.condiment_code "
+				+ "GROUP BY f1.food_code , f2.food_code " ;
+		try {
+			Connection conn = DBConnect.getConnection() ;
+
+			PreparedStatement st = conn.prepareStatement(sql) ;
+			
+			List<Arco> list = new ArrayList<Arco>() ;
+			
+			ResultSet res = st.executeQuery() ;
+			
+			while(res.next()) {
+					Food cibo1 = idMap.get(res.getInt("f1"));
+					Food cibo2 = idMap.get(res.getInt("f2"));
+					
+					if(cibo1!=null & cibo2!=null & res.getInt("Ncomuni")>0) {
+						Arco a = new Arco (cibo1,cibo2,res.getDouble("peso"));
+						list.add(a);
+						System.out.println(a);
+					}
+			}
+			
+			conn.close();
+			return list ;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+	}
+	
+	
 }

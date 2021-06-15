@@ -5,9 +5,12 @@
 package it.polito.tdp.food;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.food.model.Food;
 import it.polito.tdp.food.model.Model;
+import it.polito.tdp.food.model.Vicino;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -41,27 +44,81 @@ public class FoodController {
     private Button btnSimula; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxFood"
-    private ComboBox<?> boxFood; // Value injected by FXMLLoader
+    private ComboBox<Food> boxFood; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
+    
+    Food scelto;
 
     @FXML
     void doCreaGrafo(ActionEvent event) {
     	txtResult.clear();
-    	txtResult.appendText("Creazione grafo...");
+    	Integer porzioni=0;
+    	try {
+    		porzioni=Integer.parseInt(txtPorzioni.getText());
+    	}catch(NumberFormatException nfe) {
+    		txtResult.setText("Inserisci un numero intero di porzioni");
+    		return;
+    	}catch(NullPointerException npe) {
+    		txtResult.setText("Inserisci un numero intero di porzioni");
+    		return;
+    	}
+    	
+    	model.creaGrafo(porzioni);
+    	txtResult.appendText("Caratteristiche del grafo:\n#VERTICI = "+model.getNVertici()+"\n#ARCHI = "+model.getNArchi());
+    	
+    	boxFood.getItems().addAll(model.getVertici());
+    	
     }
+    
     
     @FXML
     void doCalorie(ActionEvent event) {
-    	txtResult.clear();
-    	txtResult.appendText("Analisi calorie...");
+    	if(model.getGraph()==null)
+    		txtResult.setText("Devi prima creare il grafo");
+    	scelto=null;
+    	try {
+    		scelto=boxFood.getValue();
+    	}catch(NullPointerException npe) {
+    		txtResult.setText("Scegli un cibo");
+    		return;
+    	}
+    	
+    	txtResult.appendText("\nI 5 cibi con le massime calorie congiunte sono: \n");
+    	List <Vicino> topFive= model.getTopFive(scelto);
+    	if(topFive.size()==0) {
+    		txtResult.appendText("Il vertice selezionato non è connesso a nulla");
+    		return;
+    	}
+    	for(Vicino v: topFive)
+    		txtResult.appendText(v.toString()+"\n");
+    	
     }
 
     @FXML
     void doSimula(ActionEvent event) {
-    	txtResult.clear();
-    	txtResult.appendText("Simulazione...");
+    	if(model.getGraph()==null)
+    		txtResult.setText("Devi prima creare il grafo");
+    	Integer K; //stazioni di lavoro
+    	try {
+    		K=Integer.parseInt(txtK.getText());
+    	}catch(NumberFormatException nfe) {
+    		txtResult.setText("Inserisci un numero intero di stazioni tra 1 e 10");
+    		return;
+    	}catch(NullPointerException npe) {
+    		txtResult.setText("Inserisci un numero intero di stazioni tra 1 e 10");
+    		return;
+    	}
+    	if(K<1||K>10) {
+    		txtResult.setText("Inserisci un numero intero di stazioni tra 1 e 10");
+    		return;
+    	}
+    	
+    	model.simula(K,scelto);
+    	
+    	txtResult.appendText("\nIl numero di cibi preparati è: "+model.getNCucinati()+" in "+model.getTotTIME()+" minuti.");
+    	
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
